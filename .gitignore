@@ -12,3 +12,5 @@ wheels/
 
 #Others files
 /output_files/*.html
+token.json
+credentials.json

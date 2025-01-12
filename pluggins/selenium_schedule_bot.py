@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
 from time import sleep
+from google_api_connection import create_events_in_calendar
 # import re
 load_dotenv()
 
@@ -16,6 +17,21 @@ USERNAME = os.getenv('USERNAME_SCHEDULE')
 PASSWORD = os.getenv('PASSWORD_SCHEDULE')
 URL_LOGIN = os.getenv('URL_LOGIN')
 # URL_SCHEDULE = os.getenv('URL_SCHEDULE')
+
+meses_do_ano = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro"
+]
 
 #FUNCTIONS:
 def create_drive():
@@ -219,11 +235,14 @@ def scraping_work_schedule_with_bs4(html:webdriver.Chrome.page_source):
                 
                 list_extract_data = column.split('-')
                 dict_data = {}
-                dict_data['month'] = title_month_schedule
+                dict_data['year'] = str(title_month_schedule).split(" ")[1]
+                dict_data['month'] = str(meses_do_ano.index(str(title_month_schedule).split(" ")[0])+1)
                 dict_data['day'] = list_extract_data[0]
                 dict_data['schedule_start'] = list_extract_data[1]
                 dict_data['schedule_end'] = list_extract_data[2]
                 dict_data['status'] = list_extract_data[3]
+                
+                dict_data['complet_date'] = f"{dict_data['year']}-{(meses_do_ano.index(str(title_month_schedule).split(' ')[0])+1)}-{dict_data['day']}"
                 if int(dict_data['day']) <= var_a:
                     if int(dict_data['day']) > len(days_finded):
                         days_finded.append(dict_data)
@@ -238,12 +257,14 @@ driver = create_drive()
 html_result = make_login(driver=driver)
 list_scraping_days = scraping_work_schedule_with_bs4(html_result)
 print(30*"-")
-for item in list_scraping_days:
-    print(f"Dia: {item['day']} de {item['month']}")
-    print(f"Entrada: {item['schedule_start']}")
-    print(f"Saída: {item['schedule_end']}")
-    print(f"Status: {item['status']}")
-    print(30*"-")
+print("Create event in calendar Google!")
+create_events_in_calendar(list_scraping_days)
+# for item in list_scraping_days:
+#     print(f"Dia: {item['complet_date']}")
+#     print(f"Entrada: {item['schedule_start']}")
+#     print(f"Saída: {item['schedule_end']}")
+#     print(f"Status: {item['status']}")
+#     print(30*"-")
 
 # print(list_scraping_days)
 
