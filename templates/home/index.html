@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}FAST-Schedule - NICE{% endblock %}
+
+{% block content %}
+<div class="w-100 h-100 d-flex flex-column justify-content-center align-items-center p-4">
+    <h1 class="fs-4">FAST-Schedule</h1>
+    <div class="col-md-6 text-center mt-1 mb-1 fs-6">
+        <p>Uma ferramenta desenvolvida para facilitar a visualização e sincrônização de escalas da plataforma <b>NICE</b> com seu calendário Google.</p>
+    </div>
+    <div>
+        <div class="p-3 rounded shadow-lg">
+            <div class="mb-3" id="step-1">
+                <h3>Passo 1:</h3>
+                <p>Conecte sua conta Google e permita o uso do Google Calendar.</p>
+                <button type="submit" class="btn btn-danger w-100 d-flex justify-content-center align-items-center" id="btn-google-account">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-google" viewBox="0 0 16 16">
+                        <path d="M15.545 6.558a9.4 9.4 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.7 7.7 0 0 1 5.352 2.082l-2.284 2.284A4.35 4.35 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.8 4.8 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.7 3.7 0 0 0 1.599-2.431H8v-3.08z"/>
+                    </svg>
+                    <span class="ms-1" id="label-btn-google-account">Conectar conta Google</span>
+                </button>
+                
+            </div>
+            <div id="step-2">
+                <h3>Passo 2:</h3>
+                <p>Preencha suas credênciais de acesso a ferramenta NICE.</p>
+                <form id="form-search-schedule">
+                    <div class="mb-3">
+                      <label for="inputUser" class="form-label">Usuário:</label>
+                      <input type="text" class="form-control" id="inputUser" name="inputUser" aria-describedby="userHelp" required>
+                      <div id="userHelp" class="form-text">Insira o mesmo user que você realiza o login no NICE.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="inputPassword" class="form-label">Senha:</label>
+                      <input type="password" class="form-control" id="inputPassword" name="inputPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center" id="search-schedule-btn">
+                        <div id="spinner-div" class="d-none justify-content-center align-items-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <span class="ms-2" id="label-btn-search-schedule">Buscar Escala</span>
+                    </button>
+                </form>
+            </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
