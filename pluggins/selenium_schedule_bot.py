@@ -140,10 +140,13 @@ def get_schedule(driver:webdriver.Chrome):
                                 html = driver.page_source
                                 driver.switch_to.default_content()
                                 close_all_handles(driver=driver)
+
                                 list_scraping_days = scraping_work_schedule_with_bs4(html=html)
+
                                 print(30*"-")
                                 print("Create event in calendar Google!")
                                 create_events_in_calendar(list_scraping_days)
+                                
                                 # return html
                             except Exception as error_exception:
                                 print(f"Error to located table complete element!\n{error_exception}")
@@ -206,11 +209,11 @@ def make_login(driver:webdriver.Chrome, credentials:dict):
         driver.switch_to.default_content()
         close_all_handles(driver=driver)
         print("Failed login!")
-        return None
+        return False
     except Exception as error_exception:
-        thread = threading.Thread(target=get_schedule(driver=driver))
-        thread.start()
-        return True
+        # thread = threading.Thread(target=get_schedule(driver=driver))
+        # thread.start()
+        return driver
     
     
 

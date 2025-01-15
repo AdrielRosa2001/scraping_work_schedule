@@ -1,6 +1,7 @@
+import threading
 from flask import Flask, render_template, abort, request
 from time import sleep
-from pluggins.selenium_schedule_bot import run_scraping
+from pluggins.selenium_schedule_bot import run_scraping, get_schedule
 
 app = Flask(__name__)
 
@@ -22,7 +23,9 @@ def get_schedule_nice_platform():
         # print(data)
         # if user_mocked == data['inputUser'] and pass_mocked == data['inputPassword']:
         return_login = run_scraping(credentials=credentials)
-        if return_login == True:
+        if return_login != False:
+            thread = threading.Thread(target=get_schedule(driver=return_login))
+            thread.start()
             return {"status_requisition": "login_success"}
         else:
             # return {"status_requisition": "login_failed"}

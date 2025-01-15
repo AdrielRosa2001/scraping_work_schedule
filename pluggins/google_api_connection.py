@@ -59,6 +59,7 @@ def search_and_delete_event(item, service:build):
         if event['summary'] == "ESCALA DE TRABALHO TP":
             service.events().delete(calendarId="primary", eventId=event['id'], sendNotifications=None, sendUpdates=None).execute()
             print(f"{event_ref} - Event deleted successfuly!")
+            return True
 
 
 def create_events_in_calendar(list_evets: dict):
@@ -81,8 +82,10 @@ def create_events_in_calendar(list_evets: dict):
     try:
         service = build("calendar", "v3", credentials=creds)
 
+        result_search = True
         for item in list_evets:
-            search_and_delete_event(item=item, service=service)
+            while result_search:
+                result_search = search_and_delete_event(item=item, service=service)
 
         for item in list_evets:
             create_event(item=item, service=service)
