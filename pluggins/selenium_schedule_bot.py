@@ -1,3 +1,4 @@
+import threading
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -8,7 +9,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
 from time import sleep
-from google_api_connection import create_events_in_calendar
+from .google_api_connection import create_events_in_calendar
 # import re
 load_dotenv()
 
@@ -68,7 +69,113 @@ def close_all_handles(driver:webdriver.Chrome):
         driver.switch_to.window(handle)
         driver.close()
 
-def make_login(driver:webdriver.Chrome):
+def get_schedule(driver:webdriver.Chrome):
+    try:
+        print("Trying node name!")
+        css_selector_element_success_login = "#banner > div > div.asi-header-top > div.main-menu > ul.username.k-widget.k-reset.k-header.k-menu.k-menu-horizontal > li > span"
+        node_name_painel = WebDriverWait(driver=driver, timeout=10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_success_login))
+        )
+        print("Node name find!")
+
+        # Identifying new handle open:
+        print("Identifying new handles!")
+        identify_and_close_new_handles(driver=driver)
+
+        try:
+            print("Search iframe main...")
+            iframe_main = WebDriverWait(driver=driver, timeout=10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationhome_WAR_agentwebstationportlet_iframe'))
+            )
+            driver.switch_to.frame(iframe_main)
+            try:
+                print("Try: open schedule view")
+                css_selector_element_open_scheduleview = "#workarea > table.margin10 > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td > a"
+                url_link_open_schedule_view = WebDriverWait(driver=driver, timeout=10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_open_scheduleview))
+                )
+                print("Open schedule view link find!")
+                url_link_open_schedule_view.click()
+                
+                try:
+                    driver.switch_to.default_content()
+                    print("Trying find iframe schedule view...")
+                    iframe_schedule_view = WebDriverWait(driver=driver, timeout=10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationscheduleviewer_WAR_agentwebstationportlet_iframe'))
+                    )
+                    print("Trying find iframe schedule view...")
+                    driver.switch_to.frame(iframe_schedule_view)
+
+                    try:
+                        print("Trying link scheduleview format month...")
+                        css_selector_element_view_month = "#viewFormatBarANDnavigationDate > table.dkGreyBar > tbody > tr > td > a:nth-child(2)"
+                        url_view_month_format = WebDriverWait(driver=driver, timeout=10).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_view_month))
+                        )
+                        print("Scheduleview format month find!")
+                        url_view_month_format.click()
+
+                        try: 
+                            print("Trying find iframe with work schedule table...")
+                            driver.switch_to.default_content()
+                            iframe_wordk_schedule = WebDriverWait(driver=driver, timeout=10).until(
+                                EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationscheduleviewer_WAR_agentwebstationportlet_iframe'))
+                            )
+                            print("Find iframe with work schedule table!")
+                            driver.switch_to.frame(iframe_wordk_schedule)
+
+                            try:
+                                print("Trying search table with work schedule...")
+                                css_selector_table_complete_element = "#mainWorkArea"
+                                table_complete_element = WebDriverWait(driver=driver, timeout=10).until(
+                                    EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_table_complete_element))
+                                )
+                                print("Table with work schedule is find!")
+
+                                # print("Writhing in html file...")
+                                # html_re = re.sub(r"\u25c4", " ", driver.page_source) 
+                                # with open('./output_files/output.html', 'w', encoding="utf-8") as f:
+                                #     f.write(html_re)
+                                # print("HTML file saved!")
+                                html = driver.page_source
+                                driver.switch_to.default_content()
+                                close_all_handles(driver=driver)
+                                list_scraping_days = scraping_work_schedule_with_bs4(html=html)
+                                print(30*"-")
+                                print("Create event in calendar Google!")
+                                create_events_in_calendar(list_scraping_days)
+                                # return html
+                            except Exception as error_exception:
+                                print(f"Error to located table complete element!\n{error_exception}")
+                                close_all_handles(driver=driver)
+                                return None
+                        except Exception as error_exception:
+                            print(f"Error to located iframe with work schedule table!\n{error_exception}")
+                            driver.switch_to.default_content()
+                            close_all_handles(driver=driver)
+                            return None
+                    except Exception as error_exception:
+                        print(f"Error to located link to work schedule in month format!")
+                except Exception as error_exception:
+                    print(f"Error to located new iframe schedule view!\n{error_exception}")
+                    driver.switch_to.default_content()
+                    close_all_handles(driver=driver)
+                    return None
+            except Exception as error_exception:
+                # print(f"Error to located link view in month!\n{error_exception}")
+                print(f"Error to click in scheduleview link!\n{error_exception}")
+                close_all_handles(driver=driver)
+                return None
+        except Exception as error_exception:
+            print(f"Iframe main not detected!")
+            close_all_handles(driver=driver)
+            return None
+    except Exception as error_exception:
+        print(f"Failed to load page!\n{error_exception}")
+        close_all_handles(driver=driver)
+        return None
+
+def make_login(driver:webdriver.Chrome, credentials:dict):
     html = None # HTML elements var
 
     print("Get to URL LOGIN page!")
@@ -85,8 +192,10 @@ def make_login(driver:webdriver.Chrome):
     print("Btn input find!")
 
     print("Make Login!")
-    login_input.send_keys(USERNAME)
-    pass_input.send_keys(PASSWORD)
+    # login_input.send_keys(USERNAME)
+    # pass_input.send_keys(PASSWORD)
+    login_input.send_keys(credentials['username'])
+    pass_input.send_keys(credentials['password'])
     sleep(1)
     btn_login.click()
     try:
@@ -94,109 +203,14 @@ def make_login(driver:webdriver.Chrome):
         failed_messege_login = WebDriverWait(driver=driver, timeout=5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_failed_login))
         )
+        driver.switch_to.default_content()
+        close_all_handles(driver=driver)
         print("Failed login!")
         return None
     except Exception as error_exception:
-        try:
-            print("Trying node name!")
-            css_selector_element_success_login = "#banner > div > div.asi-header-top > div.main-menu > ul.username.k-widget.k-reset.k-header.k-menu.k-menu-horizontal > li > span"
-            node_name_painel = WebDriverWait(driver=driver, timeout=10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_success_login))
-            )
-            print("Node name find!")
-
-            # Identifying new handle open:
-            print("Identifying new handles!")
-            identify_and_close_new_handles(driver=driver)
-
-            try:
-                print("Search iframe main...")
-                iframe_main = WebDriverWait(driver=driver, timeout=10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationhome_WAR_agentwebstationportlet_iframe'))
-                )
-                driver.switch_to.frame(iframe_main)
-                try:
-                    print("Try: open schedule view")
-                    css_selector_element_open_scheduleview = "#workarea > table.margin10 > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td > a"
-                    url_link_open_schedule_view = WebDriverWait(driver=driver, timeout=10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_open_scheduleview))
-                    )
-                    print("Open schedule view link find!")
-                    url_link_open_schedule_view.click()
-                    
-                    try:
-                        driver.switch_to.default_content()
-                        print("Trying find iframe schedule view...")
-                        iframe_schedule_view = WebDriverWait(driver=driver, timeout=10).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationscheduleviewer_WAR_agentwebstationportlet_iframe'))
-                        )
-                        print("Trying find iframe schedule view...")
-                        driver.switch_to.frame(iframe_schedule_view)
-
-                        try:
-                            print("Trying link scheduleview format month...")
-                            css_selector_element_view_month = "#viewFormatBarANDnavigationDate > table.dkGreyBar > tbody > tr > td > a:nth-child(2)"
-                            url_view_month_format = WebDriverWait(driver=driver, timeout=10).until(
-                                EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_element_view_month))
-                            )
-                            print("Scheduleview format month find!")
-                            url_view_month_format.click()
-
-                            try: 
-                                print("Trying find iframe with work schedule table...")
-                                driver.switch_to.default_content()
-                                iframe_wordk_schedule = WebDriverWait(driver=driver, timeout=10).until(
-                                    EC.presence_of_element_located((By.CSS_SELECTOR, '#_webstationscheduleviewer_WAR_agentwebstationportlet_iframe'))
-                                )
-                                print("Find iframe with work schedule table!")
-                                driver.switch_to.frame(iframe_wordk_schedule)
-
-                                try:
-                                    print("Trying search table with work schedule...")
-                                    css_selector_table_complete_element = "#mainWorkArea"
-                                    table_complete_element = WebDriverWait(driver=driver, timeout=10).until(
-                                        EC.presence_of_element_located((By.CSS_SELECTOR, css_selector_table_complete_element))
-                                    )
-                                    print("Table with work schedule is find!")
-
-                                    # print("Writhing in html file...")
-                                    # html_re = re.sub(r"\u25c4", " ", driver.page_source) 
-                                    # with open('./output_files/output.html', 'w', encoding="utf-8") as f:
-                                    #     f.write(html_re)
-                                    # print("HTML file saved!")
-                                    html = driver.page_source
-                                    driver.switch_to.default_content()
-                                    close_all_handles(driver=driver)
-                                    return html
-                                except Exception as error_exception:
-                                    print(f"Error to located table complete element!\n{error_exception}")
-                                    close_all_handles(driver=driver)
-                                    return None
-                            except Exception as error_exception:
-                                print(f"Error to located iframe with work schedule table!\n{error_exception}")
-                                driver.switch_to.default_content()
-                                close_all_handles(driver=driver)
-                                return None
-                        except Exception as error_exception:
-                            print(f"Error to located link to work schedule in month format!")
-                    except Exception as error_exception:
-                        print(f"Error to located new iframe schedule view!\n{error_exception}")
-                        driver.switch_to.default_content()
-                        close_all_handles(driver=driver)
-                        return None
-                except Exception as error_exception:
-                    # print(f"Error to located link view in month!\n{error_exception}")
-                    print(f"Error to click in scheduleview link!\n{error_exception}")
-                    close_all_handles(driver=driver)
-                    return None
-            except Exception as error_exception:
-                print(f"Iframe main not detected!")
-                close_all_handles(driver=driver)
-                return None
-        except Exception as error_exception:
-            print(f"Failed to load page!\n{error_exception}")
-            close_all_handles(driver=driver)
-            return None
+        thread = threading.Thread(target=get_schedule(driver=driver))
+        thread.start()
+        return True
     
     
 
@@ -252,13 +266,12 @@ def scraping_work_schedule_with_bs4(html:webdriver.Chrome.page_source):
     else:
         print("Not detecter html for scraping!")
 
+def run_scraping(credentials):
+    driver = create_drive()
+    result_login = make_login(driver=driver, credentials=credentials)
+    return result_login
+    
 
-driver = create_drive()
-html_result = make_login(driver=driver)
-list_scraping_days = scraping_work_schedule_with_bs4(html_result)
-print(30*"-")
-print("Create event in calendar Google!")
-create_events_in_calendar(list_scraping_days)
 # for item in list_scraping_days:
 #     print(f"Dia: {item['complet_date']}")
 #     print(f"Entrada: {item['schedule_start']}")
