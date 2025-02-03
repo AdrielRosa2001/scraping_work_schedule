@@ -17,6 +17,24 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 # SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
+def create_credential():
+    creds = None
+    if os.path.exists("token.json"):
+        # creds = Credentials.from_authorized_user_file("token.json")
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+            creds = flow.run_local_server(port=0)
+
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+
+    return creds
+
 def create_event(item, service: build):
     now_time = dt.datetime.today().strftime("%d/%m/%Y às %H:%M:%S")
     if item['schedule_start'] != "":
@@ -63,21 +81,7 @@ def search_and_delete_event(item, service:build):
 
 
 def create_events_in_calendar(list_evets: dict):
-    creds = None
-    
-    if os.path.exists("token.json"):
-        # creds = Credentials.from_authorized_user_file("token.json")
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
+    creds = create_credential()
     
     try:
         service = build("calendar", "v3", credentials=creds)
@@ -93,4 +97,3 @@ def create_events_in_calendar(list_evets: dict):
 
     except HttpError as error:
         print("An error occurred:", error)
-
