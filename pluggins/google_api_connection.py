@@ -38,17 +38,24 @@ def create_credential():
 def create_event(item, service: build):
     now_time = dt.datetime.today().strftime("%d/%m/%Y às %H:%M:%S")
     if item['schedule_start'] != "":
+        hour_start = item['schedule_start'].split(":")
+        hour_end = item['schedule_end'].split(":")
+        full_date_start = item['complet_date']
+        full_date_end = item['complet_date']
+        if int(hour_start[0]) > int(hour_end[0]):
+            full_date_end = dt.datetime.strptime(item['complet_date'], "%Y-%m-%d") + dt.timedelta(days=1)
+            full_date_end = full_date_end.strftime("%Y-%m-%d")
         event = {
             "summary": "ESCALA DE TRABALHO TP",
             "location": "Teleperformance",
-            "description": f"Escala atualizada em: {now_time}",
+            "description": f"Escala atualizada em: {now_time}\nStatus Escala: {item['status']}",
             "colorId": 3,
             "start": {
-                "dateTime": f"{item['complet_date']}T{item['schedule_start']}:00-03:00",
+                "dateTime": f"{full_date_start}T{item['schedule_start']}:00-03:00",
                 "timeZone": "America/Sao_Paulo"
             },
             "end": {
-                "dateTime": f"{item['complet_date']}T{item['schedule_end']}:00-03:00",
+                "dateTime": f"{full_date_end}T{item['schedule_end']}:00-03:00",
                 "timeZone": "America/Sao_Paulo"
             }
         }
