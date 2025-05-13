@@ -1,1 +1,1 @@
-uv run ./app.py
+uv run ./run_script_cli
